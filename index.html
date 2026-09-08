@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow · Kanban</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✓</span>TaskFlow</div>
+      <label class="search" aria-label="Buscar tareas">
+        <span>⌕</span>
+        <input id="searchInput" type="search" placeholder="Buscar tareas, etiquetas o responsables..." />
+      </label>
+    </header>
+
+    <section class="workspace">
+      <div class="workspace-heading">
+        <span class="workspace-icon">▣</span>
+        <h1>Trabajo & Producto</h1>
+        <button class="add-column" id="addColumnBtn" type="button">⊞ Añadir columna</button>
+      </div>
+
+      <section class="board" id="board"></section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="taskModalBackdrop">
+    <form class="modal" id="taskForm">
+      <h2 id="taskModalTitle">Nueva tarea</h2>
+
+      <label for="taskTitleInput">Título</label>
+      <input id="taskTitleInput" type="text" maxlength="120" required placeholder="Ej. Diseñar landing page" />
+
+      <label for="taskDescriptionInput">Descripción</label>
+      <textarea id="taskDescriptionInput" maxlength="500" placeholder="Detalles de la tarea..."></textarea>
+
+      <label for="taskAssigneeInput">Asignado a</label>
+      <input id="taskAssigneeInput" type="text" maxlength="40" placeholder="Ej. María García" />
+
+      <label for="taskTagsInput">Etiquetas <span class="hint">(separadas por comas)</span></label>
+      <input id="taskTagsInput" type="text" maxlength="120" placeholder="Ej. Frontend, Urgente" />
+
+      <label for="taskPriorityInput">Prioridad</label>
+      <select id="taskPriorityInput">
+        <option value="normal">Normal</option>
+        <option value="alta">Alta</option>
+        <option value="baja">Baja</option>
+      </select>
+
+      <div class="modal-actions">
+        <button type="button" class="cancel" id="cancelTaskBtn">Cancelar</button>
+        <button type="submit" class="save" id="saveTaskBtn">Crear tarea</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-backdrop" id="columnModalBackdrop">
+    <form class="modal" id="columnForm">
+      <h2>Nueva columna</h2>
+      <label for="columnNameInput">Nombre de la columna</label>
+      <input id="columnNameInput" type="text" maxlength="40" required placeholder="Ej. En Revisión" />
+      <div class="modal-actions">
+        <button type="button" class="cancel" id="cancelColumnBtn">Cancelar</button>
+        <button type="submit" class="save">Crear columna</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
