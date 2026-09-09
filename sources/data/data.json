@@ -17,7 +17,7 @@
     },
     {
       "id": "progress",
-      "name": "En Curso",
+      "name": "En proceso",
       "color": "progress",
       "locked": true,
       "tasks": [
@@ -32,7 +32,7 @@
     },
     {
       "id": "done",
-      "name": "Completado",
+      "name": "Finalizado",
       "color": "done",
       "locked": true,
       "tasks": [

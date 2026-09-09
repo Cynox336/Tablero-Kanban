@@ -1,5 +1,5 @@
 export const STORAGE_KEY = 'taskflow-kanban-state';
-export const DATA_URL = 'data.json';
+export const DATA_URL = 'sources/data/data.json';
 
 export function createTaskId() {
   return crypto.randomUUID ? crypto.randomUUID() : `t-${Date.now()}-${Math.random().toString(16).slice(2)}`;
