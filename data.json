@@ -1,0 +1,46 @@
+{
+  "columns": [
+    {
+      "id": "todo",
+      "name": "Por Hacer",
+      "color": "todo",
+      "tasks": [
+        {
+          "title": "Investigación UX: testing de usabilidad",
+          "description": "Recopilar feedback cualitativo sobre el nuevo dashboard de permisos y roles.",
+          "tags": ["DiseñoUI", "Research"],
+          "assignee": "Ana Cruz",
+          "priority": "normal"
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "name": "En Curso",
+      "color": "progress",
+      "tasks": [
+        {
+          "title": "Preparar presentación para el Q4 Review",
+          "description": "Alinear OKRs alcanzados y proyecciones de lanzamiento del Q1.",
+          "tags": ["Urgente", "Producto"],
+          "assignee": "Marcos Pla",
+          "priority": "alta"
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "name": "Completado",
+      "color": "done",
+      "tasks": [
+        {
+          "title": "Definir paleta de colores del Design System",
+          "description": "Verificada en QA.",
+          "tags": ["DesignSystem"],
+          "assignee": "Eva Vidal",
+          "priority": "baja"
+        }
+      ]
+    }
+  ]
+}

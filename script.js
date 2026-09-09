@@ -1,52 +1,5 @@
 const STORAGE_KEY = 'taskflow-kanban-state';
-
-const DEFAULT_COLUMNS = [
-  {
-    id: 'todo',
-    name: 'Por Hacer',
-    color: 'todo',
-    tasks: [
-      {
-        id: createTaskId(),
-        title: 'Investigación UX: testing de usabilidad',
-        description: 'Recopilar feedback cualitativo sobre el nuevo dashboard de permisos y roles.',
-        tags: ['DiseñoUI', 'Research'],
-        assignee: 'Ana Cruz',
-        priority: 'normal',
-      },
-    ],
-  },
-  {
-    id: 'progress',
-    name: 'En Curso',
-    color: 'progress',
-    tasks: [
-      {
-        id: createTaskId(),
-        title: 'Preparar presentación para el Q4 Review',
-        description: 'Alinear OKRs alcanzados y proyecciones de lanzamiento del Q1.',
-        tags: ['Urgente', 'Producto'],
-        assignee: 'Marcos Pla',
-        priority: 'alta',
-      },
-    ],
-  },
-  {
-    id: 'done',
-    name: 'Completado',
-    color: 'done',
-    tasks: [
-      {
-        id: createTaskId(),
-        title: 'Definir paleta de colores del Design System',
-        description: 'Verificada en QA.',
-        tags: ['DesignSystem'],
-        assignee: 'Eva Vidal',
-        priority: 'baja',
-      },
-    ],
-  },
-];
+const DATA_URL = 'data.json';
 
 function createTaskId() {
   return crypto.randomUUID ? crypto.randomUUID() : `t-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -56,22 +9,44 @@ function createColumnId() {
   return crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function loadState() {
+function loadStateFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (parsed && Array.isArray(parsed.columns)) return parsed;
   } catch {
-    /* estado corrupto: se ignora y se regenera por defecto */
+    /* estado corrupto: se ignora y se recarga desde data.json */
   }
-  return { columns: DEFAULT_COLUMNS };
+  return null;
+}
+
+async function loadDefaultState() {
+  const response = await fetch(DATA_URL);
+  if (!response.ok) throw new Error(`No se pudo cargar ${DATA_URL}: ${response.status}`);
+  const data = await response.json();
+
+  return {
+    columns: data.columns.map((column) => ({
+      id: column.id || createColumnId(),
+      name: column.name,
+      color: column.color || 'custom',
+      tasks: (column.tasks || []).map((task) => ({
+        id: createTaskId(),
+        title: task.title,
+        description: task.description || '',
+        assignee: task.assignee || '',
+        tags: task.tags || [],
+        priority: task.priority || 'normal',
+      })),
+    })),
+  };
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-let state = loadState();
+let state = { columns: [] };
 let searchQuery = '';
 let activeColumnId = null;
 let editingTaskId = null;
@@ -373,7 +348,7 @@ function buildColumn(column) {
   const quickAdd = document.createElement('button');
   quickAdd.type = 'button';
   quickAdd.className = 'quick-add';
-  quickAdd.textContent = '＋ Añadir tarea';
+  quickAdd.textContent = '＋ Añadir tarjeta';
   quickAdd.addEventListener('click', () => openTaskModal(column.id));
 
   cardsWrap.addEventListener('dragover', (event) => {
@@ -408,4 +383,30 @@ function render() {
   board.append(fragment);
 }
 
-render();
+function renderError(message) {
+  board.innerHTML = '';
+  const errorBox = document.createElement('p');
+  errorBox.className = 'empty-column';
+  errorBox.textContent = message;
+  board.append(errorBox);
+}
+
+async function init() {
+  const stored = loadStateFromStorage();
+  if (stored) {
+    state = stored;
+    render();
+    return;
+  }
+
+  try {
+    state = await loadDefaultState();
+    saveState();
+    render();
+  } catch (error) {
+    renderError('No se pudo cargar data.json. Si abriste el archivo con doble clic, sírvelo con un servidor local (ej. "npx serve" o la extensión Live Server) porque los navegadores bloquean fetch() sobre file://.');
+    console.error(error);
+  }
+}
+
+init();
