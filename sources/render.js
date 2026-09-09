@@ -1,4 +1,4 @@
-import { findColumnByTaskId } from './sources/state.js';
+import { findColumnByTaskId } from './state.js';
 
 export function taskMatchesSearch(task, searchQuery) {
   if (!searchQuery) return true;
