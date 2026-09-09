@@ -2,14 +2,17 @@ import { findColumnByTaskId } from './state.js';
 
 export function taskMatchesSearch(task, searchQuery) {
   if (!searchQuery) return true;
+
   const haystack = [task.title, task.description, task.assignee, ...(task.tags || [])]
     .join(' ')
     .toLowerCase();
+
   return haystack.includes(searchQuery);
 }
 
 function initials(name) {
   if (!name) return '?';
+
   return name
     .split(' ')
     .filter(Boolean)
@@ -60,9 +63,11 @@ export function buildCard(task, state, callbacks) {
   if (task.assignee) {
     const assignee = document.createElement('span');
     assignee.className = 'assignee';
+
     const avatar = document.createElement('span');
     avatar.className = 'assignee-avatar';
     avatar.textContent = initials(task.assignee);
+
     assignee.append(avatar, document.createTextNode(task.assignee));
     footer.append(assignee);
   }
@@ -77,12 +82,16 @@ export function buildCard(task, state, callbacks) {
 
   card.append(footer);
 
-  card.addEventListener('click', () => onOpen(findColumnByTaskId(state, task.id).id, task.id));
+  card.addEventListener('click', () => {
+    const column = findColumnByTaskId(state, task.id);
+    if (column) onOpen(column.id, task.id);
+  });
 
   card.addEventListener('dragstart', () => {
     onDragStart(task.id);
     requestAnimationFrame(() => card.classList.add('dragging'));
   });
+
   card.addEventListener('dragend', () => {
     onDragEnd();
     card.classList.remove('dragging');
@@ -110,6 +119,7 @@ export function buildColumn(column, state, searchQuery, callbacks) {
   name.textContent = column.name;
 
   const visibleTasks = column.tasks.filter((task) => taskMatchesSearch(task, searchQuery));
+
   const count = document.createElement('span');
   count.className = 'count';
   count.textContent = visibleTasks.length;
@@ -117,13 +127,15 @@ export function buildColumn(column, state, searchQuery, callbacks) {
   const actions = document.createElement('span');
   actions.className = 'column-actions';
 
-  const addCardBtn = document.createElement('button');
-  addCardBtn.type = 'button';
-  addCardBtn.className = 'add-card-btn';
-  addCardBtn.textContent = '＋';
-  addCardBtn.setAttribute('aria-label', `Añadir tarea en ${column.name}`);
-  addCardBtn.addEventListener('click', () => onAddTask(column.id));
-  actions.append(addCardBtn);
+  if (column.canCreateTasks) {
+    const addCardBtn = document.createElement('button');
+    addCardBtn.type = 'button';
+    addCardBtn.className = 'add-card-btn';
+    addCardBtn.textContent = '＋';
+    addCardBtn.setAttribute('aria-label', `Añadir tarea en ${column.name}`);
+    addCardBtn.addEventListener('click', () => onAddTask(column.id));
+    actions.append(addCardBtn);
+  }
 
   if (!column.locked) {
     const deleteColumnBtn = document.createElement('button');
@@ -158,37 +170,51 @@ export function buildColumn(column, state, searchQuery, callbacks) {
     });
   }
 
-  const quickAdd = document.createElement('button');
-  quickAdd.type = 'button';
-  quickAdd.className = 'quick-add';
-  quickAdd.textContent = '＋ Añadir tarjeta';
-  quickAdd.addEventListener('click', () => onAddTask(column.id));
+  if (column.canCreateTasks) {
+    const quickAdd = document.createElement('button');
+    quickAdd.type = 'button';
+    quickAdd.className = 'quick-add';
+    quickAdd.textContent = '＋ Añadir tarjeta';
+    quickAdd.addEventListener('click', () => onAddTask(column.id));
+    section.append(header, cardsWrap, quickAdd);
+  } else {
+    section.append(header, cardsWrap);
+  }
 
   cardsWrap.addEventListener('dragover', (event) => {
     event.preventDefault();
     section.classList.add('drag-over');
   });
-  cardsWrap.addEventListener('dragleave', () => section.classList.remove('drag-over'));
+
+  cardsWrap.addEventListener('dragleave', () => {
+    section.classList.remove('drag-over');
+  });
+
   cardsWrap.addEventListener('drop', (event) => {
     event.preventDefault();
     section.classList.remove('drag-over');
+
     const draggedTaskId = getDraggedTaskId();
     if (draggedTaskId) onDropTask(draggedTaskId, column.id);
   });
 
-  section.append(header, cardsWrap, quickAdd);
   return section;
 }
 
 export function render(board, state, searchQuery, callbacks) {
   board.innerHTML = '';
+
   const fragment = document.createDocumentFragment();
-  state.columns.forEach((column) => fragment.append(buildColumn(column, state, searchQuery, callbacks)));
+  state.columns.forEach((column) => {
+    fragment.append(buildColumn(column, state, searchQuery, callbacks));
+  });
+
   board.append(fragment);
 }
 
 export function renderError(board, message) {
   board.innerHTML = '';
+
   const errorBox = document.createElement('p');
   errorBox.className = 'empty-column';
   errorBox.textContent = message;

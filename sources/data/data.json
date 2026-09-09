@@ -5,6 +5,7 @@
       "name": "Por Hacer",
       "color": "todo",
       "locked": true,
+      "canCreateTasks": true,
       "tasks": [
         {
           "title": "Investigación UX: testing de usabilidad",
@@ -20,6 +21,7 @@
       "name": "En proceso",
       "color": "progress",
       "locked": true,
+      "canCreateTasks": false,
       "tasks": [
         {
           "title": "Preparar presentación para el Q4 Review",
@@ -35,6 +37,7 @@
       "name": "Finalizado",
       "color": "done",
       "locked": true,
+      "canCreateTasks": false,
       "tasks": [
         {
           "title": "Definir paleta de colores del Design System",

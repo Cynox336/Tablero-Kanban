@@ -1,6 +1,11 @@
 import {
-  createTaskId, createColumnId, loadStateFromStorage, loadDefaultState, saveState,
-  findTask, findColumnByTaskId,
+  createTaskId,
+  createColumnId,
+  loadStateFromStorage,
+  loadDefaultState,
+  saveState,
+  findTask,
+  findColumnByTaskId,
 } from './sources/state.js';
 import { render, renderError } from './sources/render.js';
 import { createTaskModalController, createColumnModalController } from './sources/modals.js';
@@ -45,10 +50,18 @@ function persistAndRender() {
 
 function renderBoard() {
   render(board, state, searchQuery, {
-    onAddTask: (columnId) => taskModal.open(columnId),
-    onOpenTask: (columnId, taskId) => taskModal.open(columnId, findTask(state, taskId)),
+    onAddTask: (columnId) => {
+      const column = state.columns.find((item) => item.id === columnId);
+      if (column?.canCreateTasks) taskModal.open(columnId);
+    },
+    onOpenTask: (columnId, taskId) => {
+      const task = findTask(state, taskId);
+      if (task) taskModal.open(columnId, task);
+    },
     onDeleteTask: (taskId) => {
       const column = findColumnByTaskId(state, taskId);
+      if (!column) return;
+
       column.tasks = column.tasks.filter((item) => item.id !== taskId);
       persistAndRender();
     },
@@ -56,12 +69,17 @@ function renderBoard() {
       state.columns = state.columns.filter((item) => item.id !== columnId);
       persistAndRender();
     },
-    onDragStartTask: (taskId) => { draggedTaskId = taskId; },
-    onDragEndTask: () => { draggedTaskId = null; },
+    onDragStartTask: (taskId) => {
+      draggedTaskId = taskId;
+    },
+    onDragEndTask: () => {
+      draggedTaskId = null;
+    },
     getDraggedTaskId: () => draggedTaskId,
     onDropTask: (taskId, targetColumnId) => {
       const sourceColumn = findColumnByTaskId(state, taskId);
       const targetColumn = state.columns.find((item) => item.id === targetColumnId);
+
       if (!sourceColumn || !targetColumn || sourceColumn.id === targetColumn.id) return;
 
       const taskIndex = sourceColumn.tasks.findIndex((item) => item.id === taskId);
@@ -75,6 +93,8 @@ function renderBoard() {
 function handleTaskFormSubmit({ columnId, taskId, title, description, assignee, tags, priority }) {
   if (taskId) {
     const task = findTask(state, taskId);
+    if (!task) return;
+
     task.title = title;
     task.description = description;
     task.assignee = assignee;
@@ -82,13 +102,32 @@ function handleTaskFormSubmit({ columnId, taskId, title, description, assignee, 
     task.priority = priority;
   } else {
     const column = state.columns.find((item) => item.id === columnId);
-    column.tasks.unshift({ id: createTaskId(), title, description, assignee, tags, priority });
+
+    if (!column?.canCreateTasks) return;
+
+    column.tasks.unshift({
+      id: createTaskId(),
+      title,
+      description,
+      assignee,
+      tags,
+      priority,
+    });
   }
+
   persistAndRender();
 }
 
 function handleColumnFormSubmit(name) {
-  state.columns.push({ id: createColumnId(), name, color: 'custom', locked: false, tasks: [] });
+  state.columns.push({
+    id: createColumnId(),
+    name,
+    color: 'custom',
+    locked: false,
+    canCreateTasks: false,
+    tasks: [],
+  });
+
   persistAndRender();
 }
 
@@ -99,6 +138,7 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     searchInput.focus();
   }
+
   if (event.key === 'Escape') {
     taskModal.close();
     columnModal.close();
@@ -112,8 +152,10 @@ searchInput.addEventListener('input', () => {
 
 async function init() {
   const stored = loadStateFromStorage();
+
   if (stored) {
     state = stored;
+    saveState(state);
     renderBoard();
     return;
   }
@@ -123,7 +165,7 @@ async function init() {
     saveState(state);
     renderBoard();
   } catch (error) {
-    renderError(board, 'No se pudo cargar sources/data.json. Si abriste el archivo con doble clic, sírvelo con un servidor local (ej. "npx serve" o la extensión Live Server) porque los navegadores bloquean fetch() y los módulos ES sobre file://.');
+    renderError(board, `No se pudo cargar el estado inicial: ${error.message}`);
     console.error(error);
   }
 }

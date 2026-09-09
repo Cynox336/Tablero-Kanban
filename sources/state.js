@@ -9,20 +9,37 @@ export function createColumnId() {
   return crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function normalizeState(state) {
+  return {
+    ...state,
+    columns: state.columns.map((column) => ({
+      ...column,
+      locked: Boolean(column.locked),
+      canCreateTasks: column.canCreateTasks === true || column.id === 'todo',
+      tasks: Array.isArray(column.tasks) ? column.tasks : [],
+    })),
+  };
+}
+
 export function loadStateFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && Array.isArray(parsed.columns)) return parsed;
+
+    if (parsed && Array.isArray(parsed.columns)) {
+      return normalizeState(parsed);
+    }
   } catch {
-    /* estado corrupto: se ignora y se recarga desde data.json */
+    /* Estado corrupto: se ignora y se recarga desde data.json. */
   }
+
   return null;
 }
 
 export async function loadDefaultState() {
   const response = await fetch(DATA_URL);
   if (!response.ok) throw new Error(`No se pudo cargar ${DATA_URL}: ${response.status}`);
+
   const data = await response.json();
 
   return {
@@ -31,6 +48,7 @@ export async function loadDefaultState() {
       name: column.name,
       color: column.color || 'custom',
       locked: Boolean(column.locked),
+      canCreateTasks: Boolean(column.canCreateTasks),
       tasks: (column.tasks || []).map((task) => ({
         id: createTaskId(),
         title: task.title,
@@ -52,6 +70,7 @@ export function findTask(state, taskId) {
     const task = column.tasks.find((item) => item.id === taskId);
     if (task) return task;
   }
+
   return null;
 }
 
