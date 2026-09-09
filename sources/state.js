@@ -1,23 +1,25 @@
 export const STORAGE_KEY = 'taskflow-kanban-state';
 export const DATA_URL = 'sources/data/data.json';
 
-export function createTaskId() {
-  return crypto.randomUUID ? crypto.randomUUID() : `t-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+export function createId(prefix = 'id') {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function createColumnId() {
-  return crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function normalizeColumn(column) {
+  return {
+    ...column,
+    locked: Boolean(column.locked),
+    canCreateTasks: Boolean(column.canCreateTasks),
+    tasks: Array.isArray(column.tasks) ? column.tasks : [],
+  };
 }
 
 function normalizeState(state) {
   return {
     ...state,
-    columns: state.columns.map((column) => ({
-      ...column,
-      locked: Boolean(column.locked),
-      canCreateTasks: column.canCreateTasks === true || column.id === 'todo',
-      tasks: Array.isArray(column.tasks) ? column.tasks : [],
-    })),
+    columns: state.columns.map(normalizeColumn),
   };
 }
 
@@ -42,23 +44,21 @@ export async function loadDefaultState() {
 
   const data = await response.json();
 
-  return {
+  return normalizeState({
     columns: data.columns.map((column) => ({
-      id: column.id || createColumnId(),
-      name: column.name,
+      ...column,
+      id: column.id || createId('c'),
       color: column.color || 'custom',
-      locked: Boolean(column.locked),
-      canCreateTasks: Boolean(column.canCreateTasks),
       tasks: (column.tasks || []).map((task) => ({
-        id: createTaskId(),
-        title: task.title,
+        ...task,
+        id: createId('t'),
         description: task.description || '',
         assignee: task.assignee || '',
         tags: task.tags || [],
         priority: task.priority || 'normal',
       })),
     })),
-  };
+  });
 }
 
 export function saveState(state) {

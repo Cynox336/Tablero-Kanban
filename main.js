@@ -1,6 +1,5 @@
 import {
-  createTaskId,
-  createColumnId,
+  createId,
   loadStateFromStorage,
   loadDefaultState,
   saveState,
@@ -14,31 +13,31 @@ let state = { columns: [] };
 let searchQuery = '';
 let draggedTaskId = null;
 
-const board = document.querySelector('#board');
-const searchInput = document.querySelector('#searchInput');
-const addColumnBtn = document.querySelector('#addColumnBtn');
+const board = document.getElementById('board');
+const searchInput = document.getElementById('searchInput');
+const addColumnBtn = document.getElementById('addColumnBtn');
 
 const taskModal = createTaskModalController(
   {
-    backdrop: document.querySelector('#taskModalBackdrop'),
-    form: document.querySelector('#taskForm'),
-    titleEl: document.querySelector('#taskModalTitle'),
-    titleInput: document.querySelector('#taskTitleInput'),
-    descriptionInput: document.querySelector('#taskDescriptionInput'),
-    assigneeInput: document.querySelector('#taskAssigneeInput'),
-    tagsInput: document.querySelector('#taskTagsInput'),
-    priorityInput: document.querySelector('#taskPriorityInput'),
-    cancelBtn: document.querySelector('#cancelTaskBtn'),
+    dialog: document.getElementById('taskDialog'),
+    form: document.getElementById('taskForm'),
+    titleEl: document.getElementById('taskModalTitle'),
+    titleInput: document.getElementById('taskTitleInput'),
+    descriptionInput: document.getElementById('taskDescriptionInput'),
+    assigneeInput: document.getElementById('taskAssigneeInput'),
+    tagsInput: document.getElementById('taskTagsInput'),
+    priorityInput: document.getElementById('taskPriorityInput'),
+    cancelBtn: document.getElementById('cancelTaskBtn'),
   },
   handleTaskFormSubmit,
 );
 
 const columnModal = createColumnModalController(
   {
-    backdrop: document.querySelector('#columnModalBackdrop'),
-    form: document.querySelector('#columnForm'),
-    nameInput: document.querySelector('#columnNameInput'),
-    cancelBtn: document.querySelector('#cancelColumnBtn'),
+    dialog: document.getElementById('columnDialog'),
+    form: document.getElementById('columnForm'),
+    nameInput: document.getElementById('columnNameInput'),
+    cancelBtn: document.getElementById('cancelColumnBtn'),
   },
   handleColumnFormSubmit,
 );
@@ -106,7 +105,7 @@ function handleTaskFormSubmit({ columnId, taskId, title, description, assignee, 
     if (!column?.canCreateTasks) return;
 
     column.tasks.unshift({
-      id: createTaskId(),
+      id: createId('t'),
       title,
       description,
       assignee,
@@ -120,7 +119,7 @@ function handleTaskFormSubmit({ columnId, taskId, title, description, assignee, 
 
 function handleColumnFormSubmit(name) {
   state.columns.push({
-    id: createColumnId(),
+    id: createId('c'),
     name,
     color: 'custom',
     locked: false,
@@ -138,16 +137,15 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     searchInput.focus();
   }
-
-  if (event.key === 'Escape') {
-    taskModal.close();
-    columnModal.close();
-  }
 });
 
+let searchTimer = null;
 searchInput.addEventListener('input', () => {
-  searchQuery = searchInput.value.toLowerCase().trim();
-  renderBoard();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQuery = searchInput.value.toLowerCase().trim();
+    renderBoard();
+  }, 200);
 });
 
 async function init() {
@@ -155,7 +153,6 @@ async function init() {
 
   if (stored) {
     state = stored;
-    saveState(state);
     renderBoard();
     return;
   }

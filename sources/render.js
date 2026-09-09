@@ -1,5 +1,3 @@
-import { findColumnByTaskId } from './state.js';
-
 export function taskMatchesSearch(task, searchQuery) {
   if (!searchQuery) return true;
 
@@ -21,23 +19,19 @@ function initials(name) {
     .join('');
 }
 
-export function buildCard(task, state, callbacks) {
-  const { onDelete, onOpen, onDragStart, onDragEnd } = callbacks;
-
+export function buildCard(task, columnId) {
   const card = document.createElement('article');
   card.className = 'card';
   card.draggable = true;
+  card.setAttribute('role', 'listitem');
   card.dataset.id = task.id;
+  card.dataset.columnId = columnId;
 
   const deleteBtn = document.createElement('button');
   deleteBtn.type = 'button';
   deleteBtn.className = 'card-delete';
   deleteBtn.textContent = '✕';
   deleteBtn.setAttribute('aria-label', `Eliminar tarea "${task.title}"`);
-  deleteBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    onDelete(task.id);
-  });
 
   const tagsWrap = document.createElement('div');
   tagsWrap.className = 'tags';
@@ -81,21 +75,6 @@ export function buildCard(task, state, callbacks) {
   }
 
   card.append(footer);
-
-  card.addEventListener('click', () => {
-    const column = findColumnByTaskId(state, task.id);
-    if (column) onOpen(column.id, task.id);
-  });
-
-  card.addEventListener('dragstart', () => {
-    onDragStart(task.id);
-    requestAnimationFrame(() => card.classList.add('dragging'));
-  });
-
-  card.addEventListener('dragend', () => {
-    onDragEnd();
-    card.classList.remove('dragging');
-  });
 
   return card;
 }
@@ -151,6 +130,7 @@ export function buildColumn(column, state, searchQuery, callbacks) {
 
   const cardsWrap = document.createElement('div');
   cardsWrap.className = 'cards';
+  cardsWrap.setAttribute('role', 'list');
 
   if (visibleTasks.length === 0) {
     const empty = document.createElement('p');
@@ -159,16 +139,39 @@ export function buildColumn(column, state, searchQuery, callbacks) {
     cardsWrap.append(empty);
   } else {
     visibleTasks.forEach((task) => {
-      cardsWrap.append(
-        buildCard(task, state, {
-          onDelete: callbacks.onDeleteTask,
-          onOpen: callbacks.onOpenTask,
-          onDragStart: callbacks.onDragStartTask,
-          onDragEnd: callbacks.onDragEndTask,
-        }),
-      );
+      cardsWrap.append(buildCard(task, column.id));
     });
   }
+
+  /* Event delegation: un solo set de listeners para todas las tarjetas */
+  cardsWrap.addEventListener('click', (event) => {
+    const deleteBtn = event.target.closest('.card-delete');
+    if (deleteBtn) {
+      event.stopPropagation();
+      const card = deleteBtn.closest('.card');
+      if (card) callbacks.onDeleteTask(card.dataset.id);
+      return;
+    }
+
+    const card = event.target.closest('.card');
+    if (card) {
+      callbacks.onOpenTask(card.dataset.columnId, card.dataset.id);
+    }
+  });
+
+  cardsWrap.addEventListener('dragstart', (event) => {
+    const card = event.target.closest('.card');
+    if (!card) return;
+    callbacks.onDragStartTask(card.dataset.id);
+    requestAnimationFrame(() => card.classList.add('dragging'));
+  });
+
+  cardsWrap.addEventListener('dragend', (event) => {
+    const card = event.target.closest('.card');
+    if (!card) return;
+    callbacks.onDragEndTask();
+    card.classList.remove('dragging');
+  });
 
   if (column.canCreateTasks) {
     const quickAdd = document.createElement('button');
@@ -202,21 +205,17 @@ export function buildColumn(column, state, searchQuery, callbacks) {
 }
 
 export function render(board, state, searchQuery, callbacks) {
-  board.innerHTML = '';
-
   const fragment = document.createDocumentFragment();
   state.columns.forEach((column) => {
     fragment.append(buildColumn(column, state, searchQuery, callbacks));
   });
 
-  board.append(fragment);
+  board.replaceChildren(fragment);
 }
 
 export function renderError(board, message) {
-  board.innerHTML = '';
-
   const errorBox = document.createElement('p');
   errorBox.className = 'empty-column';
   errorBox.textContent = message;
-  board.append(errorBox);
+  board.replaceChildren(errorBox);
 }

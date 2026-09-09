@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="TaskFlow — Tablero Kanban para gestión visual de tareas y proyectos." />
   <title>TaskFlow · Kanban</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -21,15 +22,15 @@
       <div class="workspace-heading">
         <span class="workspace-icon">▣</span>
         <h1>Trabajo &amp; Producto</h1>
-        <button class="add-column" id="addColumnBtn" type="button">⊞ Añadir columna</button>
+        <button class="add-column" id="addColumnBtn" type="button" aria-label="Añadir columna">⊞ Añadir columna</button>
       </div>
 
       <section class="board" id="board"></section>
     </section>
   </main>
 
-  <div class="modal-backdrop" id="taskModalBackdrop">
-    <form class="modal" id="taskForm">
+  <dialog class="modal" id="taskDialog" aria-labelledby="taskModalTitle">
+    <form id="taskForm">
       <h2 id="taskModalTitle">Nueva tarea</h2>
 
       <label for="taskTitleInput">Título</label>
@@ -56,11 +57,11 @@
         <button type="submit" class="save" id="saveTaskBtn">Crear tarea</button>
       </div>
     </form>
-  </div>
+  </dialog>
 
-  <div class="modal-backdrop" id="columnModalBackdrop">
-    <form class="modal" id="columnForm">
-      <h2>Nueva columna</h2>
+  <dialog class="modal" id="columnDialog" aria-labelledby="columnDialogTitle">
+    <form id="columnForm">
+      <h2 id="columnDialogTitle">Nueva columna</h2>
       <label for="columnNameInput">Nombre de la columna</label>
       <input id="columnNameInput" type="text" maxlength="40" required placeholder="Ej. En Revisión" />
       <div class="modal-actions">
@@ -68,7 +69,7 @@
         <button type="submit" class="save">Crear columna</button>
       </div>
     </form>
-  </div>
+  </dialog>
 
   <script src="main.js" type="module"></script>
 </body>

@@ -1,14 +1,40 @@
+/* ── Variables ─────────────────────────────────────────── */
 :root {
-  --bg: #f7f8fc; --panel: #fff; --ink: #22263b; --muted: #7e849d; --line: #e8eaf2;
-  --purple: #5d57d8; --purple-soft: #eeecff; --danger: #e5566d; --danger-soft: #ffe6ea;
-  --success: #15986c; --success-soft: #d9f7e8; --high: #d45063; --high-soft: #fff1d8;
-  --low: #2778ab; --low-soft: #e3f2fb; --shadow: 0 8px 26px rgba(43, 45, 84, .08);
+  /* Base */
+  --bg: #f7f8fc;
+  --panel: #fff;
+  --ink: #22263b;
+  --muted: #7e849d;
+  --line: #e8eaf2;
+
+  /* Brand */
+  --purple: #5d57d8;
+  --purple-soft: #eeecff;
+
+  /* Feedback */
+  --danger: #e5566d;
+  --danger-soft: #ffe6ea;
+  --success: #15986c;
+  --success-soft: #d9f7e8;
+
+  /* Priority */
+  --high: #d45063;
+  --high-soft: #fff1d8;
+  --low: #2778ab;
+  --low-soft: #e3f2fb;
+
+  /* Elevation */
+  --shadow: 0 8px 26px rgba(43, 45, 84, .08);
 }
+
+/* ── Reset ────────────────────────────────────────────── */
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100vh; }
 body { color: var(--ink); font: 13px/1.35 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
+
+/* ── Layout ───────────────────────────────────────────── */
 .app { width: 100%; min-height: 100vh; background: var(--bg); }
 .topbar { display: flex; align-items: center; gap: 24px; min-height: 66px; padding: 0 32px; background: rgba(255,255,255,.75); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 11px; font-size: 16px; font-weight: 750; }
@@ -22,6 +48,8 @@ button { cursor: pointer; }
 h1 { margin: 0; font-size: 16px; }
 .add-column { margin-left: auto; padding: 7px 12px; color: #41465c; background: transparent; border: 1px solid #dfe2ec; border-radius: 6px; font-size: 11px; font-weight: 650; white-space: nowrap; }
 .add-column:hover { border-color: var(--purple); color: var(--purple); }
+
+/* ── Board & Columns ──────────────────────────────────── */
 .board { display: flex; gap: 20px; align-items: flex-start; min-height: 200px; }
 .column { flex: 0 0 270px; width: 270px; }
 .column.drag-over .cards { background: var(--purple-soft); border-radius: 10px; }
@@ -37,7 +65,9 @@ h1 { margin: 0; font-size: 16px; }
 .add-card-btn:hover { color: var(--purple); }
 .delete-column-btn { border: 0; background: transparent; color: #b7bccb; font-size: 13px; }
 .delete-column-btn:hover { color: var(--danger); }
-.cards { display: flex; flex-direction: column; gap: 10px; min-height: 60px; padding: 2px; transition: background .12s ease; }
+.cards { display: flex; flex-direction: column; gap: 10px; min-height: 60px; padding: 2px; transition: background-color .12s ease; will-change: background-color; }
+
+/* ── Cards ────────────────────────────────────────────── */
 .card { position: relative; padding: 12px 12px 11px; background: var(--panel); border: 1px solid #eceef5; border-radius: 8px; box-shadow: var(--shadow); cursor: grab; }
 .card:active { cursor: grabbing; }
 .card.dragging { opacity: .4; }
@@ -57,9 +87,10 @@ h1 { margin: 0; font-size: 16px; }
 .quick-add { padding: 9px 10px; color: #8b90a3; background: #fff; border: 1px dashed #dfe2ec; border-radius: 7px; text-align: left; width: 100%; }
 .quick-add:hover { border-color: var(--purple); color: var(--purple); }
 .empty-column { padding: 14px 4px; color: #a5a9bb; font-size: 10px; text-align: center; }
-.modal-backdrop { display: none; position: fixed; inset: 0; place-items: center; padding: 20px; background: rgba(18,20,31,.45); z-index: 10; }
-.modal-backdrop.open { display: grid; }
-.modal { width: min(100%, 440px); max-height: 90vh; overflow-y: auto; padding: 22px; background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+
+/* ── Dialog (Native <dialog>) ─────────────────────────── */
+.modal { width: min(100%, 440px); max-height: 90vh; overflow-y: auto; padding: 22px; background: #fff; border: none; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.modal::backdrop { background: rgba(18,20,31,.45); }
 .modal h2 { margin: 0 0 16px; font-size: 16px; }
 .modal label { display: block; margin: 12px 0 6px; color: #626980; font-size: 11px; font-weight: 700; }
 .modal label .hint { color: #a0a4b5; font-weight: 500; text-transform: none; }
@@ -70,6 +101,8 @@ h1 { margin: 0; font-size: 16px; }
 .cancel { color: #555b70; background: #eef0f5; }
 .save { color: #fff; background: var(--purple); }
 .save:hover { background: #4a46d0; }
+
+/* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .topbar { flex-wrap: wrap; padding: 12px 18px; gap: 12px; }
   .search { order: 3; flex-basis: 100%; max-width: none; }

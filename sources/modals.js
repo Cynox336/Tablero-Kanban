@@ -1,6 +1,6 @@
 export function createTaskModalController(elements, onSubmit) {
   const {
-    backdrop, form, titleEl, titleInput, descriptionInput,
+    dialog, form, titleEl, titleInput, descriptionInput,
     assigneeInput, tagsInput, priorityInput, cancelBtn,
   } = elements;
 
@@ -23,12 +23,12 @@ export function createTaskModalController(elements, onSubmit) {
       form.reset();
     }
 
-    backdrop.classList.add('open');
+    dialog.showModal();
     titleInput.focus();
   }
 
   function close() {
-    backdrop.classList.remove('open');
+    dialog.close();
     form.reset();
     activeColumnId = null;
     editingTaskId = null;
@@ -58,23 +58,30 @@ export function createTaskModalController(elements, onSubmit) {
   });
 
   cancelBtn.addEventListener('click', close);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) close();
+
+  /* Light-dismiss: cerrar al hacer clic en el backdrop */
+  dialog.addEventListener('click', (event) => {
+    if (event.target !== dialog) return;
+    const rect = dialog.getBoundingClientRect();
+    const clickedInside =
+      rect.top <= event.clientY && event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
+    if (!clickedInside) close();
   });
 
   return { open, close };
 }
 
 export function createColumnModalController(elements, onSubmit) {
-  const { backdrop, form, nameInput, cancelBtn } = elements;
+  const { dialog, form, nameInput, cancelBtn } = elements;
 
   function open() {
-    backdrop.classList.add('open');
+    dialog.showModal();
     nameInput.focus();
   }
 
   function close() {
-    backdrop.classList.remove('open');
+    dialog.close();
     form.reset();
   }
 
@@ -87,8 +94,14 @@ export function createColumnModalController(elements, onSubmit) {
   });
 
   cancelBtn.addEventListener('click', close);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) close();
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target !== dialog) return;
+    const rect = dialog.getBoundingClientRect();
+    const clickedInside =
+      rect.top <= event.clientY && event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
+    if (!clickedInside) close();
   });
 
   return { open, close };
