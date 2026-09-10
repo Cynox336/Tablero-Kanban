@@ -11,7 +11,9 @@ function normalizeColumn(column) {
   return {
     ...column,
     locked: Boolean(column.locked),
+    fixed: column.fixed === true || column.id === 'todo',
     canCreateTasks: Boolean(column.canCreateTasks),
+    wipLimit: typeof column.wipLimit === 'number' ? column.wipLimit : 0,
     tasks: Array.isArray(column.tasks) ? column.tasks : [],
   };
 }

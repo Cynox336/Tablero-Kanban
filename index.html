@@ -16,12 +16,20 @@
         <input id="searchInput" type="search" placeholder="Buscar tareas, etiquetas o responsables..." />
         <kbd>⌘K</kbd>
       </label>
+      <select id="priorityFilter" class="priority-filter" aria-label="Filtrar por prioridad">
+        <option value="">Todas las prioridades</option>
+        <option value="alta">🔴 Alta</option>
+        <option value="normal">🟡 Normal</option>
+        <option value="baja">🔵 Baja</option>
+      </select>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema">🌙</button>
     </header>
 
     <section class="workspace">
       <div class="workspace-heading">
         <span class="workspace-icon">▣</span>
         <h1>Trabajo &amp; Producto</h1>
+        <span class="task-counter" id="taskCounter">0 tareas</span>
         <button class="add-column" id="addColumnBtn" type="button" aria-label="Añadir columna">⊞ Añadir columna</button>
       </div>
 
@@ -64,11 +72,22 @@
       <h2 id="columnDialogTitle">Nueva columna</h2>
       <label for="columnNameInput">Nombre de la columna</label>
       <input id="columnNameInput" type="text" maxlength="40" required placeholder="Ej. En Revisión" />
+      <label for="columnWipInput">Límite WIP <span class="hint">(0 = sin límite)</span></label>
+      <input id="columnWipInput" type="number" min="0" max="99" value="0" />
       <div class="modal-actions">
         <button type="button" class="cancel" id="cancelColumnBtn">Cancelar</button>
         <button type="submit" class="save">Crear columna</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="modal confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle">
+    <h2 id="confirmTitle">¿Estás seguro?</h2>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button type="button" class="cancel" id="confirmCancelBtn">Cancelar</button>
+      <button type="button" class="delete-btn" id="confirmDeleteBtn">Eliminar</button>
+    </div>
   </dialog>
 
   <script src="main.js" type="module"></script>

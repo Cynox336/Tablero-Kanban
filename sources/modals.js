@@ -73,7 +73,7 @@ export function createTaskModalController(elements, onSubmit) {
 }
 
 export function createColumnModalController(elements, onSubmit) {
-  const { dialog, form, nameInput, cancelBtn } = elements;
+  const { dialog, form, nameInput, wipInput, cancelBtn } = elements;
 
   function open() {
     dialog.showModal();
@@ -89,7 +89,8 @@ export function createColumnModalController(elements, onSubmit) {
     event.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return;
-    onSubmit(name);
+    const wipLimit = parseInt(wipInput.value, 10) || 0;
+    onSubmit({ name, wipLimit });
     close();
   });
 
