@@ -1,7 +1,3 @@
-/**
- * Abre un dialog de confirmación y devuelve una Promise<boolean>.
- * Uso: const ok = await showConfirm('¿Eliminar tarea?');
- */
 export function createConfirmController(elements) {
   const { dialog, titleEl, messageEl, cancelBtn, deleteBtn } = elements;
 

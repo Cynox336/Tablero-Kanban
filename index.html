@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFlow · Kanban</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="src/styles.css" />
 </head>
+
 <body>
   <header class="topbar">
     <a class="brand" href="./" aria-label="TaskFlow inicio"><span class="brand-mark">✓</span>TaskFlow</a>
     <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNav">☰</button>
     <nav class="main-nav" id="mainNav" aria-label="Navegación principal">
-      <a href="#board">Tablero</a>
-      <a href="#stats">Estadísticas</a>
       <button id="newTaskButton" class="primary-button" type="button">＋ Nueva tarea</button>
     </nav>
-    
+
     <label class="search" aria-label="Buscar tareas">
       <span>⌕</span>
       <input id="searchInput" type="search" placeholder="Buscar por título..." />
@@ -27,7 +27,10 @@
 
   <main class="page-shell">
     <section class="page-heading" id="stats">
-      <div><p class="eyebrow">Workspace</p><h1>Trabajo &amp; Producto</h1></div>
+      <div>
+        <p class="eyebrow">Workspace</p>
+        <h1>Trabajo &amp; Producto</h1>
+      </div>
       <div class="stats" id="statsPanel" aria-live="polite"></div>
     </section>
 
@@ -37,27 +40,56 @@
 
   <div class="modal-backdrop" id="taskModalBackdrop" hidden>
     <form class="modal" id="taskForm">
-      <div class="modal-heading"><div><p class="eyebrow">Tarjeta</p><h2 id="taskModalTitle">Nueva tarea</h2></div><button class="icon-button" id="closeTaskModal" type="button" aria-label="Cerrar">×</button></div>
-      <label for="taskTitle">Título</label><input id="taskTitle" maxlength="120" required placeholder="Ej. Preparar documentación" />
-      <label for="taskDescription">Descripción</label><textarea id="taskDescription" maxlength="1000" placeholder="Describe el trabajo..."></textarea>
-      <div class="form-grid"><div><label for="taskPriority">Prioridad</label><select id="taskPriority"><option value="baja">Baja</option><option value="media" selected>Media</option><option value="alta">Alta</option></select></div><div><label for="taskDueDate">Fecha límite</label><input id="taskDueDate" type="date" /></div></div>
-      <label for="taskAssignee">Asignado a</label><input id="taskAssignee" maxlength="80" placeholder="Ej. María García" />
-      <label for="taskTags">Etiquetas <span class="hint">separadas por comas</span></label><input id="taskTags" maxlength="200" placeholder="Frontend, API" />
-      <div class="modal-actions"><button class="secondary-button" id="cancelTaskModal" type="button">Cancelar</button><button class="primary-button" type="submit">Guardar tarea</button></div>
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Tarjeta</p>
+          <h2 id="taskModalTitle">Nueva tarea</h2>
+        </div><button class="icon-button" id="closeTaskModal" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <label for="taskTitle">Título</label><input id="taskTitle" maxlength="120" required
+        placeholder="Ej. Preparar documentación" />
+      <label for="taskDescription">Descripción</label><textarea id="taskDescription" maxlength="1000"
+        placeholder="Describe el trabajo..."></textarea>
+      <div class="form-grid">
+        <div><label for="taskPriority">Prioridad</label><select id="taskPriority">
+            <option value="baja">Baja</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+          </select></div>
+        <div><label for="taskDueDate">Fecha límite</label><input id="taskDueDate" type="date" /></div>
+      </div>
+      <label for="taskAssignee">Asignado a</label><input id="taskAssignee" maxlength="80"
+        placeholder="Ej. María García" />
+      <label for="taskTags">Etiquetas <span class="hint">separadas por comas</span></label><input id="taskTags"
+        maxlength="200" placeholder="Frontend, API" />
+      <div class="modal-actions"><button class="secondary-button" id="cancelTaskModal"
+          type="button">Cancelar</button><button class="primary-button" type="submit">Guardar tarea</button></div>
     </form>
   </div>
 
   <div class="modal-backdrop" id="detailModalBackdrop" hidden>
     <section class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
-      <div class="modal-heading"><div><p class="eyebrow">Detalle</p><h2 id="detailTitle"></h2></div><button class="icon-button" id="closeDetailModal" type="button" aria-label="Cerrar">×</button></div>
-      <div class="detail-meta" id="detailMeta"></div><p class="detail-description" id="detailDescription"></p>
-      <div class="detail-actions"><button class="secondary-button" id="editTaskButton" type="button">Editar</button><button class="danger-button" id="deleteTaskButton" type="button">Eliminar</button></div>
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Detalle</p>
+          <h2 id="detailTitle"></h2>
+        </div><button class="icon-button" id="closeDetailModal" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="detail-meta" id="detailMeta"></div>
+      <p class="detail-description" id="detailDescription"></p>
+      <div class="detail-actions"><button class="secondary-button" id="editTaskButton"
+          type="button">Editar</button><button class="danger-button" id="deleteTaskButton"
+          type="button">Eliminar</button></div>
       <hr />
-      <h3>Comentarios</h3><div class="comments" id="commentsList"></div>
-      <form class="comment-form" id="commentForm"><input id="commentAuthor" maxlength="80" placeholder="Tu nombre" required /><input id="commentText" maxlength="500" placeholder="Escribe un comentario..." required /><button class="primary-button" type="submit">Añadir</button></form>
+      <h3>Comentarios</h3>
+      <div class="comments" id="commentsList"></div>
+      <form class="comment-form" id="commentForm"><input id="commentAuthor" maxlength="80" placeholder="Tu nombre"
+          required /><input id="commentText" maxlength="500" placeholder="Escribe un comentario..." required /><button
+          class="primary-button" type="submit">Añadir</button></form>
     </section>
   </div>
 
-  <script src="main.js" type="module"></script>
+  <script src="src/main.js" type="module"></script>
 </body>
+
 </html>

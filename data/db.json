@@ -4,9 +4,11 @@
       "id": "1",
       "title": "Diseñar maqueta en Figma",
       "description": "Crear los wireframes y prototipos interactivos del tablero.",
-      "priority": "Alta",
+      "priority": "media",
       "dueDate": "2026-09-15",
-      "status": "todo"
+      "status": "todo",
+      "assignee": "",
+      "tags": []
     },
     {
       "id": "2",

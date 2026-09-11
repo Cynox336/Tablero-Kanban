@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "api": "json-server --watch db.json --port 3000",
+    "api": "json-server --watch data/db.json --port 3000",
     "dev": "live-server --port=5500"
   },
   "devDependencies": {

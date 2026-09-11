@@ -185,12 +185,13 @@ function renderBoard() {
       section.append(header, cards, addButton);
     } else section.append(header, cards);
 
-    cards.addEventListener('dragover', (event) => {
+    // NUEVO CÓDIGO: Event listeners movidos a la etiqueta <section>
+    section.addEventListener('dragover', (event) => {
       event.preventDefault();
       section.classList.add('drag-over');
     });
-    cards.addEventListener('dragleave', () => section.classList.remove('drag-over'));
-    cards.addEventListener('drop', async (event) => {
+    section.addEventListener('dragleave', () => section.classList.remove('drag-over'));
+    section.addEventListener('drop', async (event) => {
       event.preventDefault();
       section.classList.remove('drag-over');
       if (!draggedTaskId) return;
@@ -201,6 +202,7 @@ function renderBoard() {
         await loadTasks();
       } catch (error) { showError(error); }
     });
+    
     board.append(section);
   });
 }
