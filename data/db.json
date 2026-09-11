@@ -6,7 +6,7 @@
       "description": "Crear los wireframes y prototipos interactivos del tablero.",
       "priority": "media",
       "dueDate": "2026-09-15",
-      "status": "todo",
+      "status": "doing",
       "assignee": "",
       "tags": []
     },
@@ -16,7 +16,7 @@
       "description": "Iniciar la API simulada con las colecciones de tareas y comentarios.",
       "priority": "Media",
       "dueDate": "2026-09-10",
-      "status": "doing"
+      "status": "todo"
     }
   ],
   "comments": [
