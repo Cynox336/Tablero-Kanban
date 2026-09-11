@@ -1,251 +1,319 @@
-import {
-  createId,
-  loadStateFromStorage,
-  loadDefaultState,
-  saveState,
-  findTask,
-  findColumnByTaskId,
-} from './sources/state.js';
-import { render, renderError } from './sources/render.js';
-import { createTaskModalController, createColumnModalController } from './sources/modals.js';
-import { createConfirmController } from './sources/confirm.js';
+const API_URL = 'http://localhost:3000';
+const STATUS_COLUMNS = [
+  { id: 'todo', name: 'Por Hacer', color: 'todo' },
+  { id: 'doing', name: 'En Proceso', color: 'doing' },
+  { id: 'done', name: 'Finalizado', color: 'done' },
+];
 
-let state = { columns: [] };
-let searchQuery = '';
-let priorityFilter = '';
+const board = document.querySelector('#board');
+const statsPanel = document.querySelector('#statsPanel');
+const searchInput = document.querySelector('#searchInput');
+const errorMessage = document.querySelector('#errorMessage');
+const menuToggle = document.querySelector('#menuToggle');
+const mainNav = document.querySelector('#mainNav');
+
+const taskModalBackdrop = document.querySelector('#taskModalBackdrop');
+const taskForm = document.querySelector('#taskForm');
+const taskModalTitle = document.querySelector('#taskModalTitle');
+const taskTitle = document.querySelector('#taskTitle');
+const taskDescription = document.querySelector('#taskDescription');
+const taskPriority = document.querySelector('#taskPriority');
+const taskDueDate = document.querySelector('#taskDueDate');
+const taskAssignee = document.querySelector('#taskAssignee');
+const taskTags = document.querySelector('#taskTags');
+
+const detailModalBackdrop = document.querySelector('#detailModalBackdrop');
+const detailTitle = document.querySelector('#detailTitle');
+const detailMeta = document.querySelector('#detailMeta');
+const detailDescription = document.querySelector('#detailDescription');
+const commentsList = document.querySelector('#commentsList');
+const commentForm = document.querySelector('#commentForm');
+const commentAuthor = document.querySelector('#commentAuthor');
+const commentText = document.querySelector('#commentText');
+
+let tasks = [];
+let selectedTask = null;
+let editingTaskId = null;
 let draggedTaskId = null;
-let draggedColumnId = null;
+let searchTerm = '';
 
-/* ── DOM references ──────────────────────── */
-const board = document.getElementById('board');
-const searchInput = document.getElementById('searchInput');
-const addColumnBtn = document.getElementById('addColumnBtn');
-const taskCounter = document.getElementById('taskCounter');
-const priorityFilterEl = document.getElementById('priorityFilter');
-const themeToggle = document.getElementById('themeToggle');
+async function request(path, options = {}) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+  });
 
-/* ── Controllers ─────────────────────────── */
-const taskModal = createTaskModalController(
-  {
-    dialog: document.getElementById('taskDialog'),
-    form: document.getElementById('taskForm'),
-    titleEl: document.getElementById('taskModalTitle'),
-    titleInput: document.getElementById('taskTitleInput'),
-    descriptionInput: document.getElementById('taskDescriptionInput'),
-    assigneeInput: document.getElementById('taskAssigneeInput'),
-    tagsInput: document.getElementById('taskTagsInput'),
-    priorityInput: document.getElementById('taskPriorityInput'),
-    cancelBtn: document.getElementById('cancelTaskBtn'),
-  },
-  handleTaskFormSubmit,
-);
-
-const columnModal = createColumnModalController(
-  {
-    dialog: document.getElementById('columnDialog'),
-    form: document.getElementById('columnForm'),
-    nameInput: document.getElementById('columnNameInput'),
-    wipInput: document.getElementById('columnWipInput'),
-    cancelBtn: document.getElementById('cancelColumnBtn'),
-  },
-  handleColumnFormSubmit,
-);
-
-const confirmDialog = createConfirmController({
-  dialog: document.getElementById('confirmDialog'),
-  titleEl: document.getElementById('confirmTitle'),
-  messageEl: document.getElementById('confirmMessage'),
-  cancelBtn: document.getElementById('confirmCancelBtn'),
-  deleteBtn: document.getElementById('confirmDeleteBtn'),
-});
-
-/* ── Render ───────────────────────────────── */
-function persistAndRender() {
-  saveState(state);
-  renderBoard();
+  if (!response.ok) throw new Error(`${options.method || 'GET'} ${path}: ${response.status}`);
+  return response.status === 204 ? null : response.json();
 }
 
-function updateTaskCounter() {
-  const total = state.columns.reduce((sum, col) => sum + col.tasks.length, 0);
-  taskCounter.textContent = `${total} tarea${total !== 1 ? 's' : ''}`;
+function showError(error) {
+  errorMessage.hidden = false;
+  errorMessage.textContent = `No se pudo completar la operación. Comprueba que json-server está ejecutándose en ${API_URL}. (${error.message})`;
+  console.error(error);
+}
+
+function hideError() {
+  errorMessage.hidden = true;
+}
+
+function initials(name = '') {
+  return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join('') || '?';
+}
+
+function formatDate(value) {
+  if (!value) return 'Sin fecha';
+  return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
+}
+
+function isOverdue(value) {
+  return value && new Date(`${value}T23:59:59`) < new Date();
+}
+
+function filteredTasks() {
+  if (!searchTerm) return tasks;
+  return tasks.filter((task) => task.title.toLowerCase().includes(searchTerm));
+}
+
+function renderStats() {
+  statsPanel.innerHTML = '';
+  STATUS_COLUMNS.forEach((column) => {
+    const stat = document.createElement('div');
+    stat.className = 'stat';
+    const value = tasks.filter((task) => task.status === column.id).length;
+    stat.innerHTML = `<strong>${value}</strong><span>${column.name}</span>`;
+    statsPanel.append(stat);
+  });
+}
+
+function buildCard(task) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.draggable = true;
+  card.dataset.id = task.id;
+
+  const tags = document.createElement('div');
+  tags.className = 'tags';
+  const priority = document.createElement('span');
+  priority.className = `tag ${task.priority}`;
+  priority.textContent = task.priority;
+  tags.append(priority);
+  (task.tags || []).forEach((value) => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = `#${value}`;
+    tags.append(tag);
+  });
+
+  const title = document.createElement('h2');
+  title.textContent = task.title;
+  const description = document.createElement('p');
+  description.textContent = task.description || 'Sin descripción.';
+
+  const footer = document.createElement('div');
+  footer.className = 'card-footer';
+  const assignee = document.createElement('span');
+  assignee.className = 'assignee';
+  const avatar = document.createElement('span');
+  avatar.className = 'avatar';
+  avatar.textContent = initials(task.assignee);
+  assignee.append(avatar, document.createTextNode(task.assignee || 'Sin asignar'));
+  const due = document.createElement('span');
+  due.className = `due-date${isOverdue(task.dueDate) ? ' overdue' : ''}`;
+  due.textContent = formatDate(task.dueDate);
+  footer.append(assignee, due);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'card-delete';
+  deleteButton.type = 'button';
+  deleteButton.textContent = '×';
+  deleteButton.setAttribute('aria-label', `Eliminar ${task.title}`);
+  deleteButton.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    await deleteTask(task.id);
+  });
+
+  card.append(deleteButton, tags, title, description, footer);
+  card.addEventListener('click', () => openDetail(task));
+  card.addEventListener('dragstart', () => {
+    draggedTaskId = task.id;
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', () => {
+    draggedTaskId = null;
+    card.classList.remove('dragging');
+  });
+  return card;
 }
 
 function renderBoard() {
-  render(board, state, searchQuery, priorityFilter, {
-    onAddTask: (columnId) => {
-      const column = state.columns.find((item) => item.id === columnId);
-      if (!column?.canCreateTasks) return;
-      /* WIP check */
-      if (column.wipLimit > 0 && column.tasks.length >= column.wipLimit) return;
-      taskModal.open(columnId);
-    },
-    onOpenTask: (columnId, taskId) => {
-      const task = findTask(state, taskId);
-      if (task) taskModal.open(columnId, task);
-    },
-    onDeleteTask: async (taskId) => {
-      const task = findTask(state, taskId);
-      const column = findColumnByTaskId(state, taskId);
-      if (!column || !task) return;
+  board.innerHTML = '';
+  const visible = filteredTasks();
 
-      const confirmed = await confirmDialog.show(
-        '¿Eliminar tarea?',
-        `Se eliminará "${task.title}" de la columna "${column.name}".`,
-      );
-      if (!confirmed) return;
+  STATUS_COLUMNS.forEach((column) => {
+    const section = document.createElement('section');
+    section.className = 'column';
+    section.dataset.status = column.id;
 
-      column.tasks = column.tasks.filter((item) => item.id !== taskId);
-      persistAndRender();
-    },
-    onDeleteColumn: async (columnId) => {
-      const column = state.columns.find((item) => item.id === columnId);
-      if (!column) return;
+    const header = document.createElement('div');
+    header.className = 'column-header';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    const name = document.createElement('span');
+    name.textContent = column.name;
+    const count = document.createElement('span');
+    count.className = 'count';
+    count.textContent = tasks.filter((task) => task.status === column.id).length;
+    header.append(dot, name, count);
 
-      const taskCount = column.tasks.length;
-      const message = taskCount > 0
-        ? `Se eliminará la columna "${column.name}" con ${taskCount} tarea${taskCount !== 1 ? 's' : ''}.`
-        : `Se eliminará la columna "${column.name}".`;
+    const cards = document.createElement('div');
+    cards.className = 'cards';
+    const columnTasks = visible.filter((task) => task.status === column.id);
+    if (!columnTasks.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-column';
+      empty.textContent = searchTerm ? 'Sin coincidencias.' : 'Sin tareas.';
+      cards.append(empty);
+    } else columnTasks.forEach((task) => cards.append(buildCard(task)));
 
-      const confirmed = await confirmDialog.show('¿Eliminar columna?', message);
-      if (!confirmed) return;
+    if (column.id === 'todo') {
+      const addButton = document.createElement('button');
+      addButton.className = 'quick-add';
+      addButton.type = 'button';
+      addButton.textContent = '＋ Añadir tarjeta';
+      addButton.addEventListener('click', () => openTaskForm());
+      section.append(header, cards, addButton);
+    } else section.append(header, cards);
 
-      state.columns = state.columns.filter((item) => item.id !== columnId);
-      persistAndRender();
-    },
-    onDragStartTask: (taskId) => {
-      draggedTaskId = taskId;
-    },
-    onDragEndTask: () => {
-      draggedTaskId = null;
-    },
-    getDraggedTaskId: () => draggedTaskId,
-    onDropTask: (taskId, targetColumnId, dropIndex) => {
-      const sourceColumn = findColumnByTaskId(state, taskId);
-      const targetColumn = state.columns.find((item) => item.id === targetColumnId);
-
-      if (!sourceColumn || !targetColumn) return;
-
-      /* WIP check (solo al mover a OTRA columna) */
-      if (sourceColumn.id !== targetColumn.id) {
-        if (targetColumn.wipLimit > 0 && targetColumn.tasks.length >= targetColumn.wipLimit) return;
-      }
-
-      const taskIndex = sourceColumn.tasks.findIndex((item) => item.id === taskId);
-      const [task] = sourceColumn.tasks.splice(taskIndex, 1);
-
-      /* Ajustar dropIndex si es la misma columna y se movió desde antes */
-      let insertIndex = dropIndex;
-      if (sourceColumn.id === targetColumn.id && taskIndex < dropIndex) {
-        insertIndex = Math.max(0, dropIndex - 1);
-      }
-
-      targetColumn.tasks.splice(insertIndex, 0, task);
-      persistAndRender();
-    },
-    /* ── Column drag & drop ──────────────── */
-    onDragStartColumn: (columnId) => {
-      draggedColumnId = columnId;
-    },
-    onDragEndColumn: () => {
-      draggedColumnId = null;
-    },
-    getDraggedColumnId: () => draggedColumnId,
-    onDropColumn: (columnId, targetIndex) => {
-      const sourceIndex = state.columns.findIndex((c) => c.id === columnId);
-      if (sourceIndex === -1 || sourceIndex === targetIndex) return;
-
-      /* No mover columnas fijas ni ocupar la posición de una fija */
-      const sourceCol = state.columns[sourceIndex];
-      const targetCol = state.columns[targetIndex];
-      if (sourceCol.fixed || targetCol?.fixed) return;
-
-      const [column] = state.columns.splice(sourceIndex, 1);
-      state.columns.splice(targetIndex, 0, column);
-      persistAndRender();
-    },
-  });
-
-  updateTaskCounter();
-}
-
-/* ── Task form ───────────────────────────── */
-function handleTaskFormSubmit({ columnId, taskId, title, description, assignee, tags, priority }) {
-  if (taskId) {
-    const task = findTask(state, taskId);
-    if (!task) return;
-
-    task.title = title;
-    task.description = description;
-    task.assignee = assignee;
-    task.tags = tags;
-    task.priority = priority;
-  } else {
-    const column = state.columns.find((item) => item.id === columnId);
-
-    if (!column?.canCreateTasks) return;
-    if (column.wipLimit > 0 && column.tasks.length >= column.wipLimit) return;
-
-    column.tasks.unshift({
-      id: createId('t'),
-      title,
-      description,
-      assignee,
-      tags,
-      priority,
+    cards.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      section.classList.add('drag-over');
     });
-  }
-
-  persistAndRender();
-}
-
-/* ── Column form ─────────────────────────── */
-function handleColumnFormSubmit({ name, wipLimit }) {
-  state.columns.push({
-    id: createId('c'),
-    name,
-    color: 'custom',
-    locked: false,
-    canCreateTasks: true,
-    wipLimit,
-    tasks: [],
+    cards.addEventListener('dragleave', () => section.classList.remove('drag-over'));
+    cards.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      section.classList.remove('drag-over');
+      if (!draggedTaskId) return;
+      const task = tasks.find((item) => String(item.id) === String(draggedTaskId));
+      if (!task || task.status === column.id) return;
+      try {
+        await request(`/tasks/${task.id}`, { method: 'PATCH', body: JSON.stringify({ status: column.id }) });
+        await loadTasks();
+      } catch (error) { showError(error); }
+    });
+    board.append(section);
   });
-
-  persistAndRender();
 }
 
-/* ── Event listeners ─────────────────────── */
-addColumnBtn.addEventListener('click', () => columnModal.open());
-
-document.addEventListener('keydown', (event) => {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault();
-    searchInput.focus();
-  }
-});
-
-/* Búsqueda con debounce */
-let searchTimer = null;
-searchInput.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    searchQuery = searchInput.value.toLowerCase().trim();
+async function loadTasks() {
+  try {
+    tasks = await request('/tasks');
+    hideError();
+    renderStats();
     renderBoard();
-  }, 200);
-});
+  } catch (error) { showError(error); }
+}
 
-/* Filtro por prioridad */
-priorityFilterEl.addEventListener('change', () => {
-  priorityFilter = priorityFilterEl.value;
-  renderBoard();
-});
+function openTaskForm(task = null) {
+  editingTaskId = task ? task.id : null;
+  taskModalTitle.textContent = task ? 'Editar tarea' : 'Nueva tarea';
+  taskTitle.value = task?.title || '';
+  taskDescription.value = task?.description || '';
+  taskPriority.value = task?.priority || 'media';
+  taskDueDate.value = task?.dueDate || '';
+  taskAssignee.value = task?.assignee || '';
+  taskTags.value = (task?.tags || []).join(', ');
+  taskModalBackdrop.hidden = false;
+  taskTitle.focus();
+}
 
-/* ── Dark mode ───────────────────────────── */
+function closeTaskForm() { taskModalBackdrop.hidden = true; taskForm.reset(); editingTaskId = null; }
+
+async function saveTask(event) {
+  event.preventDefault();
+  const payload = {
+    title: taskTitle.value.trim(), description: taskDescription.value.trim(), priority: taskPriority.value,
+    dueDate: taskDueDate.value || null, assignee: taskAssignee.value.trim(),
+    tags: taskTags.value.split(',').map((value) => value.trim()).filter(Boolean),
+  };
+  if (!payload.title) return;
+
+  try {
+    if (editingTaskId) await request(`/tasks/${editingTaskId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    else await request('/tasks', { method: 'POST', body: JSON.stringify({ ...payload, status: 'todo' }) });
+    closeTaskForm();
+    await loadTasks();
+  } catch (error) { showError(error); }
+}
+
+async function openDetail(task) {
+  selectedTask = task;
+  detailTitle.textContent = task.title;
+  detailDescription.textContent = task.description || 'Sin descripción.';
+  detailMeta.innerHTML = '';
+  [`Prioridad: ${task.priority}`, `Límite: ${formatDate(task.dueDate)}`, `Asignado: ${task.assignee || 'Sin asignar'}`].forEach((text) => {
+    const item = document.createElement('span'); item.className = 'tag'; item.textContent = text; detailMeta.append(item);
+  });
+  detailModalBackdrop.hidden = false;
+  await loadComments(task.id);
+}
+
+async function loadComments(taskId) {
+  try {
+    const comments = await request(`/comments?taskId=${encodeURIComponent(taskId)}&_sort=createdAt&_order=asc`);
+    commentsList.innerHTML = '';
+    if (!comments.length) commentsList.innerHTML = '<p class="empty-column">Todavía no hay comentarios.</p>';
+    comments.forEach((comment) => {
+      const item = document.createElement('article'); item.className = 'comment';
+      const author = document.createElement('strong'); author.textContent = comment.author;
+      const text = document.createElement('p'); text.textContent = comment.text;
+      item.append(author, text); commentsList.append(item);
+    });
+  } catch (error) { showError(error); }
+}
+
+async function addComment(event) {
+  event.preventDefault();
+  if (!selectedTask) return;
+  try {
+    await request('/comments', { method: 'POST', body: JSON.stringify({ taskId: selectedTask.id, author: commentAuthor.value.trim(), text: commentText.value.trim(), createdAt: new Date().toISOString() }) });
+    commentText.value = '';
+    await loadComments(selectedTask.id);
+  } catch (error) { showError(error); }
+}
+
+async function deleteTask(taskId) {
+  if (!window.confirm('¿Eliminar esta tarea permanentemente?')) return;
+  try {
+    await request(`/tasks/${taskId}`, { method: 'DELETE' });
+    if (selectedTask?.id === taskId) closeDetail();
+    await loadTasks();
+  } catch (error) { showError(error); }
+}
+
+function closeDetail() { detailModalBackdrop.hidden = true; selectedTask = null; commentsList.innerHTML = ''; }
+
+document.querySelector('#newTaskButton').addEventListener('click', () => openTaskForm());
+document.querySelector('#closeTaskModal').addEventListener('click', closeTaskForm);
+document.querySelector('#cancelTaskModal').addEventListener('click', closeTaskForm);
+taskModalBackdrop.addEventListener('click', (event) => { if (event.target === taskModalBackdrop) closeTaskForm(); });
+taskForm.addEventListener('submit', saveTask);
+document.querySelector('#closeDetailModal').addEventListener('click', closeDetail);
+detailModalBackdrop.addEventListener('click', (event) => { if (event.target === detailModalBackdrop) closeDetail(); });
+document.querySelector('#editTaskButton').addEventListener('click', () => { const task = selectedTask; closeDetail(); openTaskForm(task); });
+document.querySelector('#deleteTaskButton').addEventListener('click', () => selectedTask && deleteTask(selectedTask.id));
+commentForm.addEventListener('submit', addComment);
+searchInput.addEventListener('input', () => { searchTerm = searchInput.value.toLowerCase().trim(); renderBoard(); });
+menuToggle.addEventListener('click', () => { const expanded = menuToggle.getAttribute('aria-expanded') === 'true'; menuToggle.setAttribute('aria-expanded', String(!expanded)); mainNav.classList.toggle('open', !expanded); });
+document.addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchInput.focus(); } if (event.key === 'Escape') { closeTaskForm(); closeDetail(); } });
+
+/* ── Dark Mode ── */
+const themeToggle = document.querySelector('#themeToggle');
 const THEME_KEY = 'taskflow-theme';
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-  themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
 }
 
 function initTheme() {
@@ -266,33 +334,9 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next);
 });
 
-/* Escuchar cambios del OS */
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
-  if (!localStorage.getItem(THEME_KEY)) {
-    applyTheme(event.matches ? 'dark' : 'light');
-  }
+  if (!localStorage.getItem(THEME_KEY)) applyTheme(event.matches ? 'dark' : 'light');
 });
 
-/* ── Init ────────────────────────────────── */
-async function init() {
-  initTheme();
-
-  const stored = loadStateFromStorage();
-
-  if (stored) {
-    state = stored;
-    renderBoard();
-    return;
-  }
-
-  try {
-    state = await loadDefaultState();
-    saveState(state);
-    renderBoard();
-  } catch (error) {
-    renderError(board, `No se pudo cargar el estado inicial: ${error.message}`);
-    console.error(error);
-  }
-}
-
-init();
+initTheme();
+loadTasks();

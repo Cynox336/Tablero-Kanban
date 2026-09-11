@@ -1,0 +1,13 @@
+{
+  "name": "taskflow-kanban",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "api": "json-server --watch db.json --port 3000",
+    "dev": "live-server --port=5500"
+  },
+  "devDependencies": {
+    "json-server": "^0.17.4",
+    "live-server": "^1.2.2"
+  }
+}
