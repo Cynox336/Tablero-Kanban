@@ -9,8 +9,6 @@ const board = document.querySelector('#board');
 const statsPanel = document.querySelector('#statsPanel');
 const searchInput = document.querySelector('#searchInput');
 const errorMessage = document.querySelector('#errorMessage');
-const menuToggle = document.querySelector('#menuToggle');
-const mainNav = document.querySelector('#mainNav');
 
 const taskModalBackdrop = document.querySelector('#taskModalBackdrop');
 const taskForm = document.querySelector('#taskForm');
@@ -76,14 +74,15 @@ function filteredTasks() {
 }
 
 function renderStats() {
-  statsPanel.innerHTML = '';
+  const fragment = document.createDocumentFragment();
   STATUS_COLUMNS.forEach((column) => {
     const stat = document.createElement('div');
     stat.className = 'stat';
     const value = tasks.filter((task) => task.status === column.id).length;
     stat.innerHTML = `<strong>${value}</strong><span>${column.name}</span>`;
-    statsPanel.append(stat);
+    fragment.append(stat);
   });
+  statsPanel.replaceChildren(fragment);
 }
 
 function buildCard(task) {
@@ -147,7 +146,7 @@ function buildCard(task) {
 }
 
 function renderBoard() {
-  board.innerHTML = '';
+  const fragment = document.createDocumentFragment();
   const visible = filteredTasks();
 
   STATUS_COLUMNS.forEach((column) => {
@@ -203,8 +202,10 @@ function renderBoard() {
       } catch (error) { showError(error); }
     });
     
-    board.append(section);
+    fragment.append(section);
   });
+  
+  board.replaceChildren(fragment);
 }
 
 async function loadTasks() {
@@ -263,14 +264,19 @@ async function openDetail(task) {
 async function loadComments(taskId) {
   try {
     const comments = await request(`/comments?taskId=${encodeURIComponent(taskId)}&_sort=createdAt&_order=asc`);
-    commentsList.innerHTML = '';
-    if (!comments.length) commentsList.innerHTML = '<p class="empty-column">Todavía no hay comentarios.</p>';
+    if (!comments.length) {
+      commentsList.innerHTML = '<p class="empty-column">Todavía no hay comentarios.</p>';
+      return;
+    }
+    
+    const fragment = document.createDocumentFragment();
     comments.forEach((comment) => {
       const item = document.createElement('article'); item.className = 'comment';
       const author = document.createElement('strong'); author.textContent = comment.author;
       const text = document.createElement('p'); text.textContent = comment.text;
-      item.append(author, text); commentsList.append(item);
+      item.append(author, text); fragment.append(item);
     });
+    commentsList.replaceChildren(fragment);
   } catch (error) { showError(error); }
 }
 
@@ -295,7 +301,6 @@ async function deleteTask(taskId) {
 
 function closeDetail() { detailModalBackdrop.hidden = true; selectedTask = null; commentsList.innerHTML = ''; }
 
-document.querySelector('#newTaskButton').addEventListener('click', () => openTaskForm());
 document.querySelector('#closeTaskModal').addEventListener('click', closeTaskForm);
 document.querySelector('#cancelTaskModal').addEventListener('click', closeTaskForm);
 taskModalBackdrop.addEventListener('click', (event) => { if (event.target === taskModalBackdrop) closeTaskForm(); });
@@ -306,7 +311,6 @@ document.querySelector('#editTaskButton').addEventListener('click', () => { cons
 document.querySelector('#deleteTaskButton').addEventListener('click', () => selectedTask && deleteTask(selectedTask.id));
 commentForm.addEventListener('submit', addComment);
 searchInput.addEventListener('input', () => { searchTerm = searchInput.value.toLowerCase().trim(); renderBoard(); });
-menuToggle.addEventListener('click', () => { const expanded = menuToggle.getAttribute('aria-expanded') === 'true'; menuToggle.setAttribute('aria-expanded', String(!expanded)); mainNav.classList.toggle('open', !expanded); });
 document.addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchInput.focus(); } if (event.key === 'Escape') { closeTaskForm(); closeDetail(); } });
 
 /* ── Dark Mode ── */

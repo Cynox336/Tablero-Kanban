@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "api": "json-server --watch data/db.json --port 3000",
-    "dev": "live-server --port=5500"
+    "dev": "live-server --port=5500 --ignorePattern=\"(node_modules|data)\""
   },
   "devDependencies": {
     "json-server": "^0.17.4",
