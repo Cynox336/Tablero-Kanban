@@ -94,12 +94,6 @@ a {
   color: var(--ink)
 }
 
-.search kbd {
-  font-size: 10px;
-  color: #9297ad;
-  white-space: nowrap
-}
-
 .primary-button,
 .secondary-button,
 .danger-button {

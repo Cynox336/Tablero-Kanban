@@ -324,7 +324,7 @@ document.querySelector('#editTaskButton').addEventListener('click', () => { cons
 document.querySelector('#deleteTaskButton').addEventListener('click', () => selectedTask && deleteTask(selectedTask.id));
 commentForm.addEventListener('submit', addComment);
 searchInput.addEventListener('input', () => { searchTerm = searchInput.value.toLowerCase().trim(); renderBoard(); });
-document.addEventListener('keydown', (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchInput.focus(); } if (event.key === 'Escape') { closeTaskForm(); closeDetail(); } });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeTaskForm(); closeDetail(); } });
 
 /* ── Dark Mode ── */
 const themeToggle = document.querySelector('#themeToggle');
