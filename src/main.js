@@ -274,7 +274,20 @@ async function loadComments(taskId) {
       const item = document.createElement('article'); item.className = 'comment';
       const author = document.createElement('strong'); author.textContent = comment.author;
       const text = document.createElement('p'); text.textContent = comment.text;
-      item.append(author, text); fragment.append(item);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'comment-delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.title = 'Eliminar comentario';
+      deleteBtn.addEventListener('click', async () => {
+        if (!window.confirm('¿Estás seguro de que quieres eliminar este comentario?')) return;
+        try {
+          await request(`/comments/${comment.id}`, { method: 'DELETE' });
+          await loadComments(taskId); // Recarga los comentarios de la tarea
+        } catch (error) { showError(error); }
+      });
+      
+      item.append(author, text, deleteBtn); fragment.append(item);
     });
     commentsList.replaceChildren(fragment);
   } catch (error) { showError(error); }

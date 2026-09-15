@@ -501,9 +501,33 @@ a {
 }
 
 .comment {
+  position: relative;
   padding: 10px;
   background: #f6f7fb;
   border-radius: 8px
+}
+
+.comment-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.comment-delete:hover {
+  background: rgba(229, 86, 109, 0.15);
+  color: var(--danger);
 }
 
 .comment strong {
